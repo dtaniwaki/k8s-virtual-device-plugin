@@ -19,7 +19,7 @@ LDFLAGS := -ldflags="-s -w \
 
 .PHONY: build
 build:
-	go build $(LDFLAGS) -o $(OUTDIR)/$(NAME)
+	CGO_ENABLED=0 go build $(LDFLAGS) -o $(OUTDIR)/$(NAME)
 
 .PHONY: dev-run
 dev-run:
@@ -33,6 +33,10 @@ install:
 build-image:
 	docker build -t $(IMAGE_PREFIX)$(IMAGE_NAME):$(IMAGE_TAG) $(PROJECTROOT)
 
+.PHONY: minikube-load
+minikube-load: IMAGE_TAG = latest
+minikube-load: build-image
+	docker save $(IMAGE_PREFIX)$(IMAGE_NAME):$(IMAGE_TAG) | (eval `minikube docker-env $(IMAGE_PREFIX)$(IMAGE_NAME):$(IMAGE_TAG)` && docker load)
 
 .PHONY: lint
 lint:
