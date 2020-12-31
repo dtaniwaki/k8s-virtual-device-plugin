@@ -6,7 +6,7 @@ PACKAGE_PATH := github.com/dtaniwaki/k8s-virtual-device-plugin
 IMAGE_PREFIX := dtaniwaki/
 IMAGE_NAME := k8s-virtual-device-plugin
 IMAGE_TAG   ?= $(VERSION)
-GIT_TAG_STATE = $(shell if [ "`git rev-parse --short $(VERSION)`" = "$REVISION" ]; then echo "clean" ; else echo "dirty"; fi)
+GIT_TAG_STATE = $(shell if [ "`git rev-parse --short v$(VERSION)`" = "$REVISION" ]; then echo "clean" ; else echo "dirty"; fi)
 GIT_TREE_STATE = $(shell if [ -z "`git status --porcelain`" ]; then echo "clean" ; else echo "dirty"; fi)
 OUTDIR      ?= $(PROJECTROOT)/dist
 
