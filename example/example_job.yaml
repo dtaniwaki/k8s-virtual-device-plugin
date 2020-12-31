@@ -1,0 +1,17 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: virtual-device-example
+spec:
+  completions: 10
+  parallelism: 10
+  template:
+    spec:
+      containers:
+      - name: virtual-device-test
+        image: alpine:latest
+        command: [sleep, "60"]
+        resources:
+          limits:
+            github.com/dtaniwaki-virtual: "1"
+      restartPolicy: Never

@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: virtual-device
+  namespace: kube-system
+data:
+  device.yaml: |
+    resourceName: "github.com/dtaniwaki-virtual"
+    socketName: "dtaniwaki-virtual.sock"
+    count: 2
