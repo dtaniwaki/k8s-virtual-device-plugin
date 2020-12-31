@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 	"path"
@@ -12,9 +11,8 @@ import (
 
 	"github.com/golang/glog"
 	"google.golang.org/grpc"
-	"gopkg.in/yaml.v2"
 
-	pluginapi "k8s.io/kubernetes/pkg/kubelet/apis/deviceplugin/v1beta1"
+	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 )
 
 var (
@@ -38,23 +36,7 @@ type VirtualDeviceManager struct {
 
 var _ pluginapi.DevicePluginServer = &VirtualDeviceManager{}
 
-func NewVirtualDeviceManager(devicesFilePath string) (*VirtualDeviceManager, error) {
-	raw, err := ioutil.ReadFile(devicesFilePath)
-	if err != nil {
-		return nil, err
-	}
-
-	var devConfig VirtualDeviceConfig
-	err = yaml.Unmarshal(raw, &devConfig)
-	if err != nil {
-		return nil, err
-	}
-	err = devConfig.Validate()
-	if err != nil {
-		return nil, err
-	}
-	glog.Infof("Device config: %v", devConfig)
-
+func NewVirtualDeviceManager(devConfig VirtualDeviceConfig) (*VirtualDeviceManager, error) {
 	vdm := &VirtualDeviceManager{
 		devices:      map[string]*pluginapi.Device{},
 		resourceName: devConfig.ResourceName,
@@ -63,9 +45,9 @@ func NewVirtualDeviceManager(devicesFilePath string) (*VirtualDeviceManager, err
 	}
 
 	for i := 1; i <= devConfig.Count; i++ {
-		deviceName := fmt.Sprintf("%s-%d", devConfig.ResourceName, i)
-		newDev := pluginapi.Device{ID: deviceName, Health: pluginapi.Healthy}
-		vdm.devices[deviceName] = &newDev
+		resourceName := fmt.Sprintf("%s-%d", devConfig.ResourceName, i)
+		newDev := pluginapi.Device{ID: resourceName, Health: pluginapi.Healthy}
+		vdm.devices[resourceName] = &newDev
 	}
 
 	return vdm, nil
@@ -108,15 +90,16 @@ func (vdm *VirtualDeviceManager) Start() error {
 }
 
 // Stop stops the gRPC server
-func (vdm *VirtualDeviceManager) Stop() error {
-	if vdm.server == nil {
-		return nil
+func (vdm *VirtualDeviceManager) Stop() {
+	if vdm.server != nil {
+		vdm.server.Stop()
+		vdm.server = nil
 	}
 
-	vdm.server.Stop()
-	vdm.server = nil
-
-	return vdm.cleanup()
+	err := vdm.cleanup()
+	if err != nil {
+		glog.Errorf("Failed to clean up: `%v`", err)
+	}
 }
 
 // healthcheck monitors and updates device status
@@ -215,15 +198,15 @@ func (vdm *VirtualDeviceManager) Allocate(ctx context.Context, reqs *pluginapi.A
 			}
 		}
 		glog.Info("Allocated interfaces ", req.DevicesIDs)
-		envResourceName := fmt.Sprintf("VIRTUAL_DEVICE_%s", strings.ReplaceAll(strings.ToUpper(vdm.resourceName), "-", "_"))
-		annotationResourceName := fmt.Sprintf("virtual-device/%s", vdm.resourceName)
+		envresourceName := fmt.Sprintf("VIRTUAL_DEVICE_%s", strings.ReplaceAll(strings.ToUpper(vdm.resourceName), "-", "_"))
+		annotationresourceName := fmt.Sprintf("virtual-device/%s", vdm.resourceName)
 		deviceIDsStr := strings.Join(req.DevicesIDs, ",")
 		response := pluginapi.ContainerAllocateResponse{
 			Envs: map[string]string{
-				envResourceName: deviceIDsStr,
+				envresourceName: deviceIDsStr,
 			},
 			Annotations: map[string]string{
-				annotationResourceName: deviceIDsStr,
+				annotationresourceName: deviceIDsStr,
 			},
 		}
 		responses.ContainerResponses = append(responses.ContainerResponses, &response)

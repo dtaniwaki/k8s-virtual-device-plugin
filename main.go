@@ -18,6 +18,7 @@ var (
 
 func main() {
 	noRegister := flag.Bool("no-register", false, "Run without registering to kubelet")
+	metricsPort := flag.Int("metrics-port", 2112, "Metrics port")
 	flag.Parse()
 	flag.Lookup("logtostderr").Value.Set("true")
 
@@ -36,7 +37,13 @@ func main() {
 		glog.Fatalf("Device file path is required")
 	}
 	glog.Infof("Using device defined in %s.", deviceFilePath)
-	vdm, err := NewVirtualDeviceManager(deviceFilePath)
+
+	devConfig, err := GetVirtualDeviceConfig(deviceFilePath)
+	if err != nil {
+		glog.Fatal(err)
+	}
+
+	vdm, err := NewVirtualDeviceManager(*devConfig)
 	if err != nil {
 		glog.Fatal(err)
 	}
@@ -61,10 +68,14 @@ func main() {
 		glog.Infof("device-plugin registered")
 	}
 
+	metricsServer := NewMetricsServer(*metricsPort, *devConfig)
+	metricsServer.Start()
+
 	select {
 	case s := <-sigs:
 		glog.Infof("Received signal \"%v\", shutting down.", s)
 		vdm.Stop()
+		metricsServer.Stop()
 		return
 	}
 

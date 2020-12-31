@@ -2,6 +2,10 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
+
+	"github.com/golang/glog"
+	"gopkg.in/yaml.v2"
 )
 
 type VirtualDeviceConfig struct {
@@ -21,4 +25,23 @@ func (vdc *VirtualDeviceConfig) Validate() error {
 		return fmt.Errorf("Count must not be less than 1.")
 	}
 	return nil
+}
+
+func GetVirtualDeviceConfig(path string) (*VirtualDeviceConfig, error) {
+	raw, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	var devConfig VirtualDeviceConfig
+	err = yaml.Unmarshal(raw, &devConfig)
+	if err != nil {
+		return nil, err
+	}
+	err = devConfig.Validate()
+	if err != nil {
+		return nil, err
+	}
+	glog.Infof("Device config: %v", devConfig)
+	return &devConfig, nil
 }
