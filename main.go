@@ -6,6 +6,8 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/dtaniwaki/k8s-virtual-device-plugin/pkg"
+
 	"github.com/golang/glog"
 )
 
@@ -38,12 +40,12 @@ func main() {
 	}
 	glog.Infof("Using device defined in %s.", deviceFilePath)
 
-	devConfig, err := GetVirtualDeviceConfig(deviceFilePath)
+	devConfig, err := pkg.GetVirtualDeviceConfig(deviceFilePath)
 	if err != nil {
 		glog.Fatal(err)
 	}
 
-	vdm, err := NewVirtualDeviceManager(*devConfig)
+	vdm, err := pkg.NewVirtualDeviceManager(*devConfig)
 	if err != nil {
 		glog.Fatal(err)
 	}
@@ -57,7 +59,7 @@ func main() {
 	if err != nil {
 		glog.Fatalf("Could not start device plugin: %v", err)
 	}
-	glog.Infof("Starting to serve on %s", vdm.socketName)
+	glog.Infof("Starting to serve on %s", devConfig.SocketName)
 
 	if !*noRegister {
 		// Registers with Kubelet.
@@ -68,7 +70,7 @@ func main() {
 		glog.Infof("device-plugin registered")
 	}
 
-	metricsServer := NewMetricsServer(*metricsPort, *devConfig)
+	metricsServer := pkg.NewMetricsServer(*metricsPort, *devConfig)
 	metricsServer.Start()
 
 	select {

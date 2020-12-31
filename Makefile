@@ -25,7 +25,7 @@ build:
 
 .PHONY: dev-run
 dev-run:
-	go run $(LDFLAGS) ./... -no-register $(PROJECTROOT)/device.yaml
+	go run $(LDFLAGS) main.go -no-register $(PROJECTROOT)/device.yaml
 
 .PHONY: install
 install:
