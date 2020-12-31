@@ -176,7 +176,7 @@ func (vdm *VirtualDeviceManager) GetDevicePluginOptions(context.Context, *plugin
 
 // ListAndWatch lists devices and update that list according to the health status
 func (vdm *VirtualDeviceManager) ListAndWatch(e *pluginapi.Empty, stream pluginapi.DevicePlugin_ListAndWatchServer) error {
-	glog.Info("device-plugin: ListAndWatch start\n")
+	glog.Info("device-plugin: ListAndWatch start")
 	resp := new(pluginapi.ListAndWatchResponse)
 	for _, dev := range vdm.devices {
 		glog.Info("dev ", dev)
@@ -217,7 +217,7 @@ func (vdm *VirtualDeviceManager) Allocate(ctx context.Context, reqs *pluginapi.A
 		}
 		glog.Info("Allocated interfaces ", req.DevicesIDs)
 		envResourceName := fmt.Sprintf("VIRTUAL_DEVICE_%s", strings.ReplaceAll(strings.ToUpper(vdm.resourceName), "-", "_"))
-		annotationResourceName := fmt.Sprintf("virtual-device/-%s", vdm.resourceName)
+		annotationResourceName := fmt.Sprintf("virtual-device/%s", vdm.resourceName)
 		deviceIDsStr := strings.Join(req.DevicesIDs, ",")
 		response := pluginapi.ContainerAllocateResponse{
 			Envs: map[string]string{

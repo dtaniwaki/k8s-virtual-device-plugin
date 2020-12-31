@@ -53,7 +53,7 @@ func main() {
 		if err != nil {
 			glog.Fatal(err)
 		}
-		glog.Infof("device-plugin registered\n")
+		glog.Infof("device-plugin registered")
 	}
 
 	select {
