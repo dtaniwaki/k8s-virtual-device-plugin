@@ -17,10 +17,14 @@ import (
 	pluginapi "k8s.io/kubernetes/pkg/kubelet/apis/deviceplugin/v1beta1"
 )
 
-type VirtualDevice struct {
-	ResourceName string `yaml:"resource_name"`
-	SocketName   string `yaml:"socket_name"`
-	Count        int    `yaml:"count"`
+var (
+	devicePluginPath = os.Getenv("DEVICE_PLUGIN_PATH")
+)
+
+func init() {
+	if devicePluginPath == "" {
+		devicePluginPath = pluginapi.DevicePluginPath
+	}
 }
 
 // VirtualDeviceManager manages our virtual devices
@@ -34,37 +38,32 @@ type VirtualDeviceManager struct {
 
 var _ pluginapi.DevicePluginServer = &VirtualDeviceManager{}
 
-var (
-	devicePluginPath = os.Getenv("DEVICE_PLUGIN_PATH")
-)
-
-func init() {
-	if devicePluginPath == "" {
-		devicePluginPath = pluginapi.DevicePluginPath
-	}
-}
-
 func NewVirtualDeviceManager(devicesFilePath string) (*VirtualDeviceManager, error) {
 	raw, err := ioutil.ReadFile(devicesFilePath)
 	if err != nil {
 		return nil, err
 	}
 
-	var dev VirtualDevice
-	err = yaml.Unmarshal(raw, &dev)
+	var devConfig VirtualDeviceConfig
+	err = yaml.Unmarshal(raw, &devConfig)
 	if err != nil {
 		return nil, err
 	}
+	err = devConfig.Validate()
+	if err != nil {
+		return nil, err
+	}
+	glog.Infof("Device config: %v", devConfig)
 
 	vdm := &VirtualDeviceManager{
 		devices:      map[string]*pluginapi.Device{},
-		resourceName: dev.ResourceName,
-		socketName:   dev.SocketName,
+		resourceName: devConfig.ResourceName,
+		socketName:   devConfig.SocketName,
 		health:       make(chan *pluginapi.Device),
 	}
 
-	for i := 1; i <= dev.Count; i++ {
-		deviceName := fmt.Sprintf("%s-%d", dev.ResourceName, i)
+	for i := 1; i <= devConfig.Count; i++ {
+		deviceName := fmt.Sprintf("%s-%d", devConfig.ResourceName, i)
 		newDev := pluginapi.Device{ID: deviceName, Health: pluginapi.Healthy}
 		vdm.devices[deviceName] = &newDev
 	}
