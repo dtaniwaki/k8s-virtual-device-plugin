@@ -12,7 +12,7 @@ import (
 
 	"github.com/golang/glog"
 	"google.golang.org/grpc"
-	"gopkg.in/yaml.v1"
+	"gopkg.in/yaml.v2"
 
 	pluginapi "k8s.io/kubernetes/pkg/kubelet/apis/deviceplugin/v1beta1"
 )
