@@ -12,6 +12,7 @@ import (
 var (
 	Version      string = "Unknown"
 	Revision     string = "Unknown"
+	GitTagState  string = "Unknown"
 	GitTreeState string = "Unknown"
 )
 
@@ -20,11 +21,15 @@ func main() {
 	flag.Parse()
 	flag.Lookup("logtostderr").Value.Set("true")
 
-	dirtySuffix := ""
-	if GitTreeState != "clean" {
-		dirtySuffix = "-dirty"
+	tagDirtySuffix := ""
+	if GitTagState != "clean" {
+		tagDirtySuffix = "-dirty"
 	}
-	glog.Infof("Starging K8s Virtual Device Plugin %s [%s%s].", Version, Revision, dirtySuffix)
+	treeDirtySuffix := ""
+	if GitTreeState != "clean" {
+		treeDirtySuffix = "-dirty"
+	}
+	glog.Infof("Starging K8s Virtual Device Plugin %s%s [%s%s].", Version, tagDirtySuffix, Revision, treeDirtySuffix)
 
 	deviceFilePath := flag.Arg(0)
 	if deviceFilePath == "" {
