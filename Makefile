@@ -33,6 +33,10 @@ install:
 build-image:
 	docker build -t $(IMAGE_PREFIX)$(IMAGE_NAME):$(IMAGE_TAG) $(PROJECTROOT)
 
+.PHONY: release-image
+release-image: build-image
+	docker push $(IMAGE_PREFIX)$(IMAGE_NAME):$(IMAGE_TAG)
+
 .PHONY: minikube-load
 minikube-load: IMAGE_TAG = latest
 minikube-load: build-image
