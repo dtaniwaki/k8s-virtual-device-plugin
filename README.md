@@ -1,6 +1,6 @@
 # k8s-virtual-device-plugin
 
-[![Docker Automated build](https://img.shields.io/docker/automated/dtaniwaki/k8s-virtual-device-plugin.svg)](https://hub.docker.com/r/dtaniwaki/k8s-virtual-device-plugin)
+[![Docker Automated build](https://img.shields.io/docker/cloud/automated/dtaniwaki/k8s-virtual-device-plugin.svg)](https://hub.docker.com/r/dtaniwaki/k8s-virtual-device-plugin)
 
 You can control number of pods per node by using this plugin without actually having any devices.
 
