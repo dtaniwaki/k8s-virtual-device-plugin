@@ -7,6 +7,7 @@ require (
 	github.com/prometheus/client_golang v1.9.0
 	google.golang.org/grpc v1.34.0
 	gopkg.in/yaml.v2 v2.4.0
+	gotest.tools v2.2.0+incompatible
 	k8s.io/kubelet v0.0.0
 	k8s.io/kubernetes v1.18.2
 )

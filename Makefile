@@ -25,7 +25,7 @@ build:
 
 .PHONY: dev-run
 dev-run:
-	go run $(LDFLAGS) main.go -no-register $(PROJECTROOT)/device.yaml
+	go run $(ldflags) main.go -no-register $(projectroot)/device.yaml
 
 .PHONY: install
 install:
@@ -44,9 +44,17 @@ minikube-load: IMAGE_TAG = latest
 minikube-load: build-image
 	docker save $(IMAGE_PREFIX)$(IMAGE_NAME):$(IMAGE_TAG) | (eval `minikube docker-env $(IMAGE_PREFIX)$(IMAGE_NAME):$(IMAGE_TAG)` && docker load)
 
+test:
+	@go test -v -race -short ./...
+
 .PHONY: lint
 lint:
 	golangci-lint run --config golangci.yaml
+
+.PHONY: coverage
+coverage:
+	@go test -covermode=count -coverprofile=profile.cov -coverpkg ./pkg/... $(shell go list ./... | grep -v /vendor/)
+	@go tool cover -func=profile.cov
 
 .PHONY: clean
 clean:
