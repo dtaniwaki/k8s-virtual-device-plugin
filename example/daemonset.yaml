@@ -26,6 +26,10 @@ spec:
       - image: dtaniwaki/k8s-virtual-device-plugin:latest
         imagePullPolicy: IfNotPresent
         name: k8s-virtual-device-plugin
+        ports:
+        - name: metrics
+          containerPort: 2112
+          protocol: TCP
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
