@@ -55,6 +55,8 @@ func NewVirtualDeviceManager(devConfig VirtualDeviceConfig) (*VirtualDeviceManag
 
 // Start starts the gRPC server of the device plugin
 func (vdm *VirtualDeviceManager) Start() error {
+	glog.Info("Starting device plugin server")
+
 	err := vdm.cleanup()
 	if err != nil {
 		return err
@@ -97,6 +99,8 @@ func (vdm *VirtualDeviceManager) Start() error {
 
 // Stop stops the gRPC server
 func (vdm *VirtualDeviceManager) Stop() error {
+	glog.Info("Stopping device plugin server")
+
 	if vdm.server != nil {
 		vdm.server.Stop()
 		vdm.server = nil

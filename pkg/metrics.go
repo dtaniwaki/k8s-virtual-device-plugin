@@ -89,6 +89,8 @@ func (s *MetricsServer) Start() error {
 }
 
 func (s *MetricsServer) Stop() error {
+	glog.Info("Stopping metris server")
+
 	if s.server != nil {
 		if err := s.server.Shutdown(context.Background()); err != nil {
 			return fmt.Errorf("Failed to shutdown HTTP server, with err: `%v`", err)
