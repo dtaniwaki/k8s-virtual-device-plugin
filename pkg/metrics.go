@@ -88,10 +88,10 @@ func (s *MetricsServer) Start() error {
 	return nil
 }
 
-func (s *MetricsServer) Stop() {
+func (s *MetricsServer) Stop() error {
 	if s.server != nil {
 		if err := s.server.Shutdown(context.Background()); err != nil {
-			glog.Errorf("Failed to shutdown HTTP server, with err: `%v`", err)
+			return fmt.Errorf("Failed to shutdown HTTP server, with err: `%v`", err)
 		}
 		s.server = nil
 	}
@@ -101,7 +101,7 @@ func (s *MetricsServer) Stop() {
 		s.stop = nil
 	}
 
-	return
+	return nil
 }
 
 func (s *MetricsServer) updateMetrics() error {
@@ -136,8 +136,8 @@ func connectToServer(socket string) (*grpc.ClientConn, func(), error) {
 	defer cancel()
 
 	conn, err := grpc.DialContext(ctx, socket, grpc.WithInsecure(), grpc.WithBlock(),
-		grpc.WithDialer(func(addr string, timeout time.Duration) (net.Conn, error) {
-			return net.DialTimeout("unix", addr, timeout)
+		grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
+			return (&net.Dialer{}).DialContext(ctx, "unix", addr)
 		}),
 	)
 

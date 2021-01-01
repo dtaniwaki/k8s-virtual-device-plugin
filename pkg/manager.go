@@ -68,13 +68,17 @@ func (vdm *VirtualDeviceManager) Start() error {
 	vdm.server = grpc.NewServer([]grpc.ServerOption{}...)
 	pluginapi.RegisterDevicePluginServer(vdm.server, vdm)
 
-	go vdm.server.Serve(sock)
+	go func() {
+		_ = vdm.server.Serve(sock)
+	}()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
 	// Wait for server to start by launching a blocking connection
-	conn, err := grpc.Dial(vdm.socketPath(), grpc.WithInsecure(), grpc.WithBlock(),
-		grpc.WithTimeout(5*time.Second),
-		grpc.WithDialer(func(addr string, timeout time.Duration) (net.Conn, error) {
-			return net.DialTimeout("unix", addr, timeout)
+	conn, err := grpc.DialContext(ctx, vdm.socketPath(), grpc.WithInsecure(), grpc.WithBlock(),
+		grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
+			return (&net.Dialer{}).DialContext(ctx, "unix", addr)
 		}),
 	)
 
@@ -84,13 +88,15 @@ func (vdm *VirtualDeviceManager) Start() error {
 
 	conn.Close()
 
-	go vdm.healthcheck()
+	go func() {
+		_ = vdm.healthcheck()
+	}()
 
 	return nil
 }
 
 // Stop stops the gRPC server
-func (vdm *VirtualDeviceManager) Stop() {
+func (vdm *VirtualDeviceManager) Stop() error {
 	if vdm.server != nil {
 		vdm.server.Stop()
 		vdm.server = nil
@@ -98,8 +104,10 @@ func (vdm *VirtualDeviceManager) Stop() {
 
 	err := vdm.cleanup()
 	if err != nil {
-		glog.Errorf("Failed to clean up: `%v`", err)
+		return fmt.Errorf("Failed to clean up: `%v`", err)
 	}
+
+	return nil
 }
 
 // healthcheck monitors and updates device status
@@ -126,10 +134,12 @@ func (vdm *VirtualDeviceManager) socketPath() string {
 // Register with kubelet
 func (vdm *VirtualDeviceManager) Register() error {
 	conn, err := grpc.Dial(pluginapi.KubeletSocket, grpc.WithInsecure(),
-		grpc.WithDialer(func(addr string, timeout time.Duration) (net.Conn, error) {
-			return net.DialTimeout("unix", addr, timeout)
+		grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
+			return (&net.Dialer{}).DialContext(ctx, "unix", addr)
 		}))
-	defer conn.Close()
+	defer func() {
+		_ = conn.Close()
+	}()
 	if err != nil {
 		return fmt.Errorf("device-plugin: cannot connect to kubelet service: %v", err)
 	}
@@ -170,18 +180,16 @@ func (vdm *VirtualDeviceManager) ListAndWatch(e *pluginapi.Empty, stream plugina
 	}
 
 	for {
-		select {
-		case d := <-vdm.health:
-			d.Health = pluginapi.Unhealthy
-			resp := new(pluginapi.ListAndWatchResponse)
-			for _, dev := range vdm.devices {
-				glog.Info("dev ", dev)
-				resp.Devices = append(resp.Devices, dev)
-			}
-			glog.Info("resp.Devices ", resp.Devices)
-			if err := stream.Send(resp); err != nil {
-				glog.Errorf("Failed to send response to kubelet: %v", err)
-			}
+		d := <-vdm.health
+		d.Health = pluginapi.Unhealthy
+		resp := new(pluginapi.ListAndWatchResponse)
+		for _, dev := range vdm.devices {
+			glog.Info("dev ", dev)
+			resp.Devices = append(resp.Devices, dev)
+		}
+		glog.Info("resp.Devices ", resp.Devices)
+		if err := stream.Send(resp); err != nil {
+			glog.Errorf("Failed to send response to kubelet: %v", err)
 		}
 	}
 }

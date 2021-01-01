@@ -22,7 +22,10 @@ func main() {
 	noRegister := flag.Bool("no-register", false, "Run without registering to kubelet")
 	metricsPort := flag.Int("metrics-port", 2112, "Metrics port")
 	flag.Parse()
-	flag.Lookup("logtostderr").Value.Set("true")
+	err := flag.Lookup("logtostderr").Value.Set("true")
+	if err != nil {
+		glog.Fatal(err)
+	}
 
 	tagDirtySuffix := ""
 	if GitTagState != "clean" {
@@ -59,6 +62,12 @@ func main() {
 	if err != nil {
 		glog.Fatalf("Could not start device plugin: %v", err)
 	}
+	defer func() {
+		err := vdm.Stop()
+		if err != nil {
+			glog.Error(err)
+		}
+	}()
 	glog.Infof("Starting to serve on %s", devConfig.SocketName)
 
 	if !*noRegister {
@@ -71,14 +80,17 @@ func main() {
 	}
 
 	metricsServer := pkg.NewMetricsServer(*metricsPort, *devConfig)
-	metricsServer.Start()
-
-	select {
-	case s := <-sigs:
-		glog.Infof("Received signal \"%v\", shutting down.", s)
-		vdm.Stop()
-		metricsServer.Stop()
-		return
+	err = metricsServer.Start()
+	if err != nil {
+		glog.Fatal(err)
 	}
+	defer func() {
+		err := metricsServer.Stop()
+		if err != nil {
+			glog.Error(err)
+		}
+	}()
 
+	s := <-sigs
+	glog.Infof("Received signal \"%v\", shutting down.", s)
 }
